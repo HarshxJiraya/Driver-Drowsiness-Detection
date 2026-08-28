@@ -10,7 +10,7 @@ class EyeDetector:
         362, 385, 387, 263, 373, 380
     ]
 
-    def __init__(self,padding=10):
+    def __init__(self,padding=20):
         self.padding = padding
 
     def _get_eye_box(self,face_landmark,eye_index,frame_width,frame_height):
@@ -58,3 +58,5 @@ class EyeDetector:
             "left_box":left_box,
             "right_box":right_box,
         } 
+
+
