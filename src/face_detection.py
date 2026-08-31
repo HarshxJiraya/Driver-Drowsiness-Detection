@@ -6,13 +6,13 @@ import mediapipe as mp
 
 class FaceDetector:
     """
-    MediaPipe Face Landmarker using LIVE_STREAM mode.
+    MediaPipe Face Landmarker using VIDEO mode.
 
     Responsibilities:
     - Load the Face Landmarker model
-    - Receive live video frames
-    - Detect facial landmarks asynchronously
-    - Store the latest detection result
+    - Receive video/webcam frames
+    - Detect facial landmarks synchronously
+    - Return the result for the current frame
     """
 
     def __init__(
@@ -38,23 +38,23 @@ class FaceDetector:
                 f"Face Landmarker model not found:\n{model_path}"
             )
 
-        # MediaPipe Tasks
+        # MediaPipe Tasks Vision
         self.vision = mp.tasks.vision
-
-        # Store the latest result
-        self.latest_result = None
 
         # Face Landmarker options
         options = self.vision.FaceLandmarkerOptions(
             base_options=mp.tasks.BaseOptions(
                 model_asset_path=str(model_path)
             ),
-            running_mode=self.vision.RunningMode.LIVE_STREAM,
+
+            # Synchronous video mode
+            running_mode=self.vision.RunningMode.VIDEO,
+
             num_faces=num_faces,
+
             min_face_detection_confidence=min_detection_confidence,
             min_face_presence_confidence=min_presence_confidence,
             min_tracking_confidence=min_tracking_confidence,
-            result_callback=self._result_callback,
         )
 
         # Create Face Landmarker
@@ -64,27 +64,9 @@ class FaceDetector:
             )
         )
 
-    def _result_callback(
-        self,
-        result,
-        output_image,
-        timestamp_ms
-    ):
-        """
-        Callback called by MediaPipe when a result is available.
-        """
-
-        self.latest_result = result
-
-        print(
-        f"Callback received | "
-        f"timestamp={timestamp_ms} | "
-        f"faces={len(result.face_landmarks)}"
-    )
-
     def detect(self, frame, timestamp_ms):
         """
-        Submit a frame to MediaPipe for asynchronous processing.
+        Detect facial landmarks for the current frame.
 
         Parameters
         ----------
@@ -93,6 +75,11 @@ class FaceDetector:
 
         timestamp_ms : int
             Increasing timestamp in milliseconds.
+
+        Returns
+        -------
+        FaceLandmarkerResult
+            MediaPipe face landmark result.
         """
 
         # OpenCV BGR → RGB
@@ -107,18 +94,13 @@ class FaceDetector:
             data=rgb_frame
         )
 
-        # Submit frame asynchronously
-        self.landmarker.detect_async(
+        # Synchronous detection
+        result = self.landmarker.detect_for_video(
             mp_image,
             timestamp_ms
         )
 
-    def get_latest_result(self):
-        """
-        Return the most recent Face Landmarker result.
-        """
-
-        return self.latest_result
+        return result
 
     def close(self):
         """
